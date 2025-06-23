@@ -1,0 +1,231 @@
+Common dfs usages:
+1.Checking if a Graph is Bipartite
+vector<vector<int>> adj;
+vector<int> color; 
+bool isBipartite = true;
+
+void dfs(int node, int col) {
+    color[node] = col;
+    for (int neighbor : adj[node]) {
+        if (color[neighbor] == -1) {
+            dfs(neighbor, 1 - col);
+        } else if (color[neighbor] == col) {
+            isBipartite = false;
+        }
+    }
+}
+
+bool checkBipartite(int n) {
+    color.assign(n, -1);
+    isBipartite = true;
+    
+    for (int i = 0; i < n; i++) {
+        if (color[i] == -1) {
+            dfs(i, 0);
+        }
+    }
+    
+    return isBipartite;
+}
+
+2.Finding the Size of a Subtree
+vector<vector<int>> adj;
+vector<int> subtreeSize;
+
+int dfs(int node, int parent) {
+    subtreeSize[node] = 1; // Count itself
+    for (int neighbor : adj[node]) {
+        if (neighbor != parent) {
+            subtreeSize[node] += dfs(neighbor, node);
+        }
+    }
+    return subtreeSize[node];
+}
+
+void calculateSubtreeSizes(int n) {
+    subtreeSize.assign(n, 0);
+    dfs(0, -1);  // Assuming node 0 is the root
+}
+
+3. Detecting a Cycle in an Undirected Graph
+vector<vector<int>> adj;
+vector<bool> visited;
+
+bool dfs(int node, int parent) {
+    visited[node] = true;
+    for (int neighbor : adj[node]) {
+        if (!visited[neighbor]) {
+            if (dfs(neighbor, node)) return true;
+        } else if (neighbor != parent) {
+            return true;  // Back edge found
+        }
+    }
+    return false;
+}
+
+bool hasCycle(int n) {
+    visited.assign(n, false);
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) {
+            if (dfs(i, -1)) return true;
+        }
+    }
+    return false;
+}
+
+4. Finding Bridges in a Graph (Critical Edges)
+vector<vector<int>> adj;
+vector<int> tin, low;
+vector<bool> visited;
+vector<pair<int, int>> bridges;
+int timer = 0;
+
+void dfs(int node, int parent) {
+    visited[node] = true;
+    tin[node] = low[node] = timer++;
+
+    for (int neighbor : adj[node]) {
+        if (neighbor == parent) continue;
+        if (visited[neighbor]) {
+            low[node] = min(low[node], tin[neighbor]);
+        } else {
+            dfs(neighbor, node);
+            low[node] = min(low[node], low[neighbor]);
+            if (low[neighbor] > tin[node]) {
+                bridges.push_back({node, neighbor});
+            }
+        }
+    }
+}
+
+vector<pair<int, int>> findBridges(int n) {
+    tin.assign(n, -1);
+    low.assign(n, -1);
+    visited.assign(n, false);
+    bridges.clear();
+    timer = 0;
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) dfs(i, -1);
+    }
+    
+    return bridges;
+}
+
+5. Finding Articulation Points (Cut Vertices)
+
+vector<vector<int>> adj;
+vector<int> tin, low;
+vector<bool> visited, isArticulation;
+int timer = 0;
+
+void dfs(int node, int parent) {
+    visited[node] = true;
+    tin[node] = low[node] = timer++;
+    int children = 0;
+
+    for (int neighbor : adj[node]) {
+        if (neighbor == parent) continue;
+        if (visited[neighbor]) {
+            low[node] = min(low[node], tin[neighbor]);
+        } else {
+            dfs(neighbor, node);
+            low[node] = min(low[node], low[neighbor]);
+            if (low[neighbor] >= tin[node] && parent != -1) {
+                isArticulation[node] = true;
+            }
+            children++;
+        }
+    }
+
+    if (parent == -1 && children > 1) {
+        isArticulation[node] = true;
+    }
+}
+
+vector<bool> findArticulationPoints(int n) {
+    tin.assign(n, -1);
+    low.assign(n, -1);
+    visited.assign(n, false);
+    isArticulation.assign(n, false);
+    timer = 0;
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) dfs(i, -1);
+    }
+    
+    return isArticulation;
+}
+
+6. Topological Sorting (DAG)
+
+vector<vector<int>> adj;
+vector<bool> visited;
+vector<int> topoSort;
+
+void dfs(int node) {
+    visited[node] = true;
+    for (int neighbor : adj[node]) {
+        if (!visited[neighbor]) dfs(neighbor);
+    }
+    topoSort.push_back(node);
+}
+
+vector<int> topologicalSort(int n) {
+    visited.assign(n, false);
+    topoSort.clear();
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) dfs(i);
+    }
+    
+    reverse(topoSort.begin(), topoSort.end());
+    return topoSort;
+}
+
+7. Finding Strongly Connected Components (Kosaraju’s Algorithm)
+
+vector<vector<int>> adj, revAdj;
+vector<bool> visited;
+vector<int> order, component;
+
+void dfs1(int node) {
+    visited[node] = true;
+    for (int neighbor : adj[node]) {
+        if (!visited[neighbor]) dfs1(neighbor);
+    }
+    order.push_back(node);
+}
+
+void dfs2(int node) {
+    visited[node] = true;
+    component.push_back(node);
+    for (int neighbor : revAdj[node]) {
+        if (!visited[neighbor]) dfs2(neighbor);
+    }
+}
+
+vector<vector<int>> findSCCs(int n) {
+    visited.assign(n, false);
+    order.clear();
+
+    for (int i = 0; i < n; i++) {
+        if (!visited[i]) dfs1(i);
+    }
+
+    visited.assign(n, false);
+    vector<vector<int>> sccs;
+
+    for (int i = n - 1; i >= 0; i--) {
+        int node = order[i];
+        if (!visited[node]) {
+            component.clear();
+            dfs2(node);
+            sccs.push_back(component);
+        }
+    }
+    
+    return sccs;
+}
+
+8. 
